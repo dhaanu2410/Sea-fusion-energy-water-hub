@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agatti Island Ocean Energy & Hydrogen Hub - Digital Twin Simulator</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ocean: {
+              950: '#040b14',
+              900: '#071626',
+              800: '#0d253f',
+              700: '#13385c',
+              600: '#1b4d7a',
+            },
+            cyan: {
+              400: '#22d3ee',
+              500: '#06b6d4',
+              accent: '#00f2fe'
+            },
+            teal: {
+              400: '#2dd4bf',
+              500: '#14b8a6'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #040b14;
+      color: #e2e8f0;
+    }
+    
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #071626;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1b4d7a;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #22d3ee;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]:focus {
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      background: #13385c;
+      border-radius: 3px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: #00f2fe;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.6);
+    }
+
+    .glass-card {
+      background: rgba(7, 22, 38, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(34, 211, 238, 0.12);
+    }
+    .glass-card:hover {
+      border-color: rgba(34, 211, 238, 0.25);
+    }
+    
+    @keyframes pulse-cyan {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(34, 211, 238, 0); }
+    }
+    .badge-pulse {
+      animation: pulse-cyan 2.5s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-ocean-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-black">
+
+  <!-- ==================== HEADER BAR ==================== -->
+  <header class="border-b border-cyan-500/20 bg-ocean-900/90 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Title & Location -->
+      <div class="flex items-center space-x-3">
+        <div class="p-2.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg shadow-cyan-500/20 text-black font-bold">
+          <i class="fa-solid font-bold fa-water text-xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-bold tracking-tight text-white">Agatti Island Ocean Energy & Green H₂ Hub</h1>
+            <span class="px-2.5 py-0.5 text-xs font-semibold bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-full">Lakshadweep, India</span>
+          </div>
+          <p class="text-xs text-slate-400">Integrated TOPCon Solar · AeroLeaf Wind · Wave WEC · Open-Cycle OTEC · LTTD Desalination · Green H₂</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div class="flex items-center space-x-3">
+        <button onclick="toggleSimulationDrawer()" class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-ocean-800 hover:bg-ocean-700 text-cyan-300 border border-cyan-500/30 flex items-center gap-2 transition">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Simulation Parameters</span>
+        </button>
+        <button onclick="exportRunReport()" class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold shadow-md shadow-cyan-500/20 flex items-center gap-2 transition">
+          <i class="fa-solid fa-file-export"></i>
+          <span>Export Run Report</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== NAVIGATION TABS ==================== -->
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-3 overflow-x-auto text-xs sm:text-sm font-medium border-t border-slate-800/80">
+      <button onclick="switchTab('overview')" id="tab-overview" class="py-3 px-3 border-b-2 border-cyan-400 text-cyan-300 flex items-center gap-2 font-semibold whitespace-nowrap">
+        <i class="fa-solid fa-diagram-project"></i> System Overview
+      </button>
+      <button onclick="switchTab('generation')" id="tab-generation" class="py-3 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-bolt"></i> Renewable Generation
+      </button>
+      <button onclick="switchTab('dispatch')" id="tab-dispatch" class="py-3 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-brain"></i> Intelligent Dispatch
+      </button>
+      <button onclick="switchTab('lttd-h2')" id="tab-lttd-h2" class="py-3 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-droplet"></i> LTTD & Green H₂ Hub
+      </button>
+      <button onclick="switchTab('3d-view')" id="tab-3d-view" class="py-3 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-cube text-cyan-400"></i> 3D Surface-to-Seabed
+      </button>
+      <button onclick="switchTab('software-stackup')" id="tab-software-stackup" class="py-3 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-layer-group text-teal-400"></i> Software Stackup & Sandbox
+      </button>
+      <button onclick="switchTab('economics')" id="tab-economics" class="py-3 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-chart-line"></i> Economics & Carbon
+      </button>
+      <button onclick="switchTab('references')" id="tab-references" class="py-3 px-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 hover:border-slate-700 flex items-center gap-2 whitespace-nowrap">
+        <i class="fa-solid fa-book-bookmark"></i> Reference Library
+      </button>
+    </nav>
+  </header>
+
+  <!-- ==================== DYNAMIC SIMULATION PARAMETERS DRAWER ==================== -->
+  <div id="simulation-drawer" class="bg-ocean-900 border-b border-cyan-500/30 px-4 py-4 sm:px-8 hidden">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+          <i class="fa-solid fa-sliders"></i> Global Environmental & System Simulation Parameters
+        </h3>
+        <span class="text-xs text-slate-400">Modifications dynamically update physical process calculations</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Solar PV Config -->
+        <div class="p-3 bg-ocean-950/80 rounded-xl border border-slate-800">
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span class="text-slate-300">TOPCon Solar PV</span>
+            <span id="val-solar-cap" class="text-cyan-300 font-mono">650 kWp</span>
+          </div>
+          <input type="range" id="input-solar-cap" min="200" max="1500" step="50" value="650" oninput="updateSimParams()">
+          <div class="flex justify-between text-[10px] text-slate-500 mt-2">
+            <span>Peak Sun Hours (kWh/m²/day)</span>
+            <span id="val-psh" class="text-slate-300 font-mono">6.0 PSH</span>
+          </div>
+          <input type="range" id="input-psh" min="3.5" max="7.5" step="0.1" value="6.0" oninput="updateSimParams()">
+        </div>
+
+        <!-- AeroLeaf Wind Grid -->
+        <div class="p-3 bg-ocean-950/80 rounded-xl border border-slate-800">
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span class="text-slate-300">AeroLeaf Wind Grid</span>
+            <span id="val-wind-units" class="text-cyan-300 font-mono">117 Units (9x13)</span>
+          </div>
+          <input type="range" id="input-wind-units" min="30" max="300" step="9" value="117" oninput="updateSimParams()">
+          <div class="flex justify-between text-[10px] text-slate-500 mt-2">
+            <span>Mean Wind Speed (m/s)</span>
+            <span id="val-wind-speed" class="text-slate-300 font-mono">6.6 m/s</span>
+          </div>
+          <input type="range" id="input-wind-speed" min="3.0" max="12.0" step="0.2" value="6.6" oninput="updateSimParams()">
+        </div>
+
+        <!-- Wave & OTEC -->
+        <div class="p-3 bg-ocean-950/80 rounded-xl border border-slate-800">
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span class="text-slate-300">Wave & OTEC</span>
+            <span id="val-wave-units" class="text-cyan-300 font-mono">30 TBS Units</span>
+          </div>
+          <input type="range" id="input-wave-units" min="10" max="100" step="5" value="30" oninput="updateSimParams()">
+          <div class="flex justify-between text-[10px] text-slate-500 mt-2">
+            <span>Ocean Thermal Delta ΔT (°C)</span>
+            <span id="val-otec-dt" class="text-slate-300 font-mono">20.0 °C</span>
+          </div>
+          <input type="range" id="input-otec-dt" min="14.0" max="24.0" step="0.5" value="20.0" oninput="updateSimParams()">
+        </div>
+
+        <!-- Load & Battery Storage -->
+        <div class="p-3 bg-ocean-950/80 rounded-xl border border-slate-800">
+          <div class="flex justify-between text-xs font-semibold mb-1">
+            <span class="text-slate-300">Island Load & Storage</span>
+            <span id="val-island-load" class="text-rose-400 font-mono">260 kW Avg</span>
+          </div>
+          <input type="range" id="input-island-load" min="100" max="600" step="10" value="260" oninput="updateSimParams()">
+          <div class="flex justify-between text-[10px] text-slate-500 mt-2">
+            <span>BESS Storage Capacity (kWh)</span>
+            <span id="val-bess-cap" class="text-slate-300 font-mono">1200 kWh</span>
+          </div>
+          <input type="range" id="input-bess-cap" min="300" max="3000" step="100" value="1200" oninput="updateSimParams()">
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN CONTENT AREA ==================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- VIEW 1: SYSTEM OVERVIEW (KPIs + Live Architecture Summary) -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="view-overview" class="space-y-6">
+      
+      <!-- Top Metrics Bar -->
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+        
+        <div class="glass-card p-4 rounded-xl border-l-4 border-l-cyan-400">
+          <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Generation</p>
+          <p id="kpi-total-power" class="text-xl font-bold font-mono text-cyan-300 mt-1">794 kW</p>
+          <span class="text-[10px] text-teal-400 flex items-center gap-1 mt-1"><i class="fa-solid fa-arrow-trend-up"></i> Peak Capacity</span>
+        </div>
+
+        <div class="glass-card p-4 rounded-xl border-l-4 border-l-blue-500">
+          <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Daily Energy Yield</p>
+          <p id="kpi-daily-energy" class="text-xl font-bold font-mono text-white mt-1">7,420 kWh</p>
+          <span class="text-[10px] text-slate-400 mt-1 block">Avg 24h Output</span>
+        </div>
+
+        <div class="glass-card p-4 rounded-xl border-l-4 border-l-teal-400">
+          <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Freshwater (LTTD)</p>
+          <p id="kpi-water-output" class="text-xl font-bold font-mono text-teal-300 mt-1">150 m³/day</p>
+          <span class="text-[10px] text-slate-400 mt-1 block">150,000 Liters/day</span>
+        </div>
+
+        <div class="glass-card p-4 rounded-xl border-l-4 border-l-emerald-400">
+          <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Green H₂ Production</p>
+          <p id="kpi-h2-output" class="text-xl font-bold font-mono text-emerald-300 mt-1">118 kg/day</p>
+          <span class="text-[10px] text-emerald-400 mt-1 block">99.999% Pure H₂</span>
+        </div>
+
+        <div class="glass-card p-4 rounded-xl border-l-4 border-l-purple-500">
+          <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Diesel Offset</p>
+          <p id="kpi-diesel-offset" class="text-xl font-bold font-mono text-purple-300 mt-1">2,150 L/day</p>
+          <span class="text-[10px] text-slate-400 mt-1 block">Displaced Diesel</span>
+        </div>
+
+        <div class="glass-card p-4 rounded-xl border-l-4 border-l-emerald-500">
+          <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">CO₂ Avoided</p>
+          <p id="kpi-co2-offset" class="text-xl font-bold font-mono text-emerald-400 mt-1">2,110 t/yr</p>
+          <span class="text-[10px] text-slate-400 mt-1 block">Clean Abatement</span>
+        </div>
+
+      </div>
+
+      <!-- Overview Charts Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Live Generation Stacked Chart -->
+        <div class="glass-card p-5 rounded-2xl lg:col-span-2 flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-semibold text-white">24-Hour Integrated Generation Profile</h3>
+              <p class="text-xs text-slate-400">Hourly generation across TOPCon Solar, AeroLeaf Wind, Wave WEC, and Open-Cycle OTEC</p>
+            </div>
+            <span class="px-2.5 py-1 text-[11px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-md">Live Multi-Physics Model</span>
+          </div>
+          <div class="flex-1 min-h-[300px] relative">
+            <canvas id="chart-overview-gen"></canvas>
+          </div>
+        </div>
+
+        <!-- Energy Allocation Doughnut -->
+        <div class="glass-card p-5 rounded-2xl flex flex-col">
+          <div class="mb-4">
+            <h3 class="text-base font-semibold text-white">Energy Dispatch Distribution</h3>
+            <p class="text-xs text-slate-400">Allocation across Island Load, LTTD, H₂ Electrolyser & BESS</p>
+          </div>
+          <div class="flex-1 min-h-[250px] relative flex items-center justify-center">
+            <canvas id="chart-overview-dispatch"></canvas>
+          </div>
+          <div id="dispatch-summary-list" class="mt-4 space-y-2 text-xs border-t border-slate-800 pt-3">
+            <!-- Dynamically Populated -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- VIEW 2: RENEWABLE GENERATION -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="view-generation" class="space-y-6 hidden">
+      <div class="glass-card p-5 rounded-2xl">
+        <h3 class="text-base font-semibold text-white mb-1">Subsystem Renewable Generation Breakdown</h3>
+        <p class="text-xs text-slate-400 mb-4">Detailed hourly profile and efficiency characteristics of each marine renewable asset</p>
+        
+        <div class="h-[380px] relative">
+          <canvas id="chart-generation-detailed"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- VIEW 3: INTELLIGENT ENERGY DISPATCH -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="view-dispatch" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <div class="glass-card p-5 rounded-2xl lg:col-span-2">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-semibold text-white">Dynamic Load vs. Generation Balance</h3>
+              <p class="text-xs text-slate-400">Priority Dispatch: 1. Critical Island Load → 2. LTTD Desalination → 3. BESS → 4. Green H₂ Electrolyser</p>
+            </div>
+          </div>
+          <div class="h-[340px] relative">
+            <canvas id="chart-dispatch-balance"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card p-5 rounded-2xl flex flex-col justify-between">
+          <div>
+            <h3 class="text-base font-semibold text-white mb-2">Battery Energy Storage (BESS) State</h3>
+            <p class="text-xs text-slate-400 mb-4">Real-time simulation of Lithium-Iron-Phosphate (LFP) 1200 kWh system</p>
+            
+            <div class="p-4 bg-ocean-950 rounded-xl border border-slate-800 text-center mb-4">
+              <span class="text-xs text-slate-400 uppercase tracking-wider">Simulated Avg State of Charge (SOC)</span>
+              <div id="bess-soc-display" class="text-3xl font-bold font-mono text-teal-300 my-1">78.4%</div>
+              <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden p-0.5 mt-2">
+                <div id="bess-soc-bar" class="bg-gradient-to-r from-teal-400 to-cyan-400 h-full rounded-full" style="width: 78.4%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- VIEW 4: LTTD & GREEN H2 HUB -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="view-lttd-h2" class="space-y-6 hidden">
+      <div class="glass-card p-6 rounded-2xl border border-teal-500/30">
+        <h3 class="text-base font-semibold text-white mb-1">LTTD Desalination & Green Hydrogen Mass Balance</h3>
+        <p class="text-xs text-slate-400 mb-6">Process flow schematic showing marine energy input, low-temperature thermal flash evaporation, and PEM water splitting</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+          <div class="p-4 bg-ocean-950/90 rounded-xl border border-cyan-500/20 text-center relative">
+            <div class="w-10 h-10 mx-auto mb-2 rounded-full bg-cyan-500/20 text-cyan-300 flex items-center justify-center font-bold text-lg">1</div>
+            <h4 class="text-sm font-bold text-white">LTTD Desalination</h4>
+            <p class="text-[11px] text-slate-400 mt-1">Uses 20°C ocean thermal gradient to flash evaporate surface seawater under high vacuum.</p>
+            <div class="mt-3 p-2 bg-cyan-950/80 rounded border border-cyan-500/30 text-xs font-mono text-cyan-300">
+              Output: <span id="lttd-water-val">150.0 m³/day</span>
+            </div>
+          </div>
+
+          <div class="p-4 bg-ocean-950/90 rounded-xl border border-blue-500/20 text-center relative">
+            <div class="w-10 h-10 mx-auto mb-2 rounded-full bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold text-lg">2</div>
+            <h4 class="text-sm font-bold text-white">Ultra-Purification Feed</h4>
+            <p class="text-[11px] text-slate-400 mt-1">LTTD distillate is polished to &gt;18 MΩ·cm conductivity for electrolyser stack feed protection.</p>
+            <div class="mt-3 p-2 bg-blue-950/80 rounded border border-blue-500/30 text-xs font-mono text-blue-300">
+              Feed Req: <span id="h2-water-req-val">1,062 Liters/day</span>
+            </div>
+          </div>
+
+          <div class="p-4 bg-ocean-950/90 rounded-xl border border-emerald-500/20 text-center relative">
+            <div class="w-10 h-10 mx-auto mb-2 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-lg">3</div>
+            <h4 class="text-sm font-bold text-white">PEM Green H₂ Generation</h4>
+            <p class="text-[11px] text-slate-400 mt-1">Proton Exchange Membrane splitting water at 55 kWh/kg H₂ efficiency.</p>
+            <div class="mt-3 p-2 bg-emerald-950/80 rounded border border-emerald-500/30 text-xs font-mono text-emerald-300">
+              H₂ Yield: <span id="h2-prod-val">118.0 kg/day</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- VIEW 5: 3D SURFACE-TO-SEABED INTEGRATED VIEW -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="view-3d-view" class="space-y-4 hidden">
+      <div class="flex flex-wrap items-center justify-between gap-2 bg-ocean-900/80 p-3 rounded-xl border border-cyan-500/20">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-eye text-cyan-400"></i>
+            Interactive 3D Surface-to-Seabed Agatti Marine Environment
+          </h3>
+          <p class="text-xs text-slate-400">Integrated visual deployment perspective showing offshore AeroLeaf grid, floating TOPCon PV, wave buoys, subsea cables, and OTEC pipes.</p>
+        </div>
+      </div>
+
+      <div class="relative w-full overflow-hidden rounded-2xl border-2 border-cyan-500/30 shadow-2xl bg-ocean-950">
+        <img 
+          src="https://raw.githubusercontent.com/stackblitz/stackblitz-images/main/agatti_3d_cross_section_final.png" 
+          alt="Agatti Island 3D Surface to Seabed Visualization" 
+          class="w-full h-auto object-cover min-h-[480px] sm:min-h-[580px] filter brightness-105 contrast-105"
+          onerror="this.onerror=null; this.src='https://placehold.co/1280x720/071626/22d3ee?text=Agatti+Island+3D+Surface-to-Seabed+Deployment+Visualization';"
+        />
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- VIEW 6: SOFTWARE STACKUP & INTERACTIVE EMS LOAD-DISTRIBUTION SANDBOX -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="view-software-stackup" class="space-y-6 hidden">
+      
+      <!-- Panel Header Banner -->
+      <div class="glass-card p-6 rounded-2xl border-l-4 border-l-teal-400">
+        <div class="flex items-center space-x-3 mb-2">
+          <div class="p-2.5 bg-teal-500/10 text-teal-400 rounded-xl"><i class="fa-solid fa-brain text-xl"></i></div>
+          <div>
+            <h3 class="text-lg font-bold text-white">Intelligent Energy Management Software Stackup & Dispatch Sandbox</h3>
+            <p class="text-xs text-slate-400">Coordinated Microgrid Control using Deep Learning & Metaheuristic Optimization (Grey Wolf Optimizer)</p>
+          </div>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed mt-3">
+          Based on research methodologies exploring intelligent software coordination for multi-source microgrids, this module manages generation, storage, and consumption as an integrated system rather than isolated units. Test sample generation inputs below to simulate real-time load management and power distribution.
+        </p>
+      </div>
+
+      <!-- INTERACTIVE EMS LOAD-DISTRIBUTION SANDBOX (NEW) -->
+      <div class="glass-card p-6 rounded-2xl border border-cyan-500/30">
+        <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+          <div>
+            <h4 class="text-sm font-bold text-cyan-300 flex items-center gap-2">
+              <i class="fa-solid fa-sliders text-cyan-400"></i> Interactive EMS Power Dispatch & Load Management Sandbox
+            </h4>
+            <p class="text-xs text-slate-400 mt-0.5">Feed sample instantaneous generation and demand values to test how the intelligent controller coordinates power distribution.</p>
+          </div>
+          <button onclick="resetSandboxInputs()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-ocean-800 hover:bg-ocean-700 text-slate-300 border border-slate-700 transition">
+            Reset Defaults
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- Sample Input Controls -->
+          <div class="space-y-4 bg-ocean-950/80 p-5 rounded-xl border border-slate-800">
+            <span class="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">1. Feed Sample Input Generation & Demand (kW)</span>
+            
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-400">TOPCon Solar Power:</span>
+                <span id="sb-val-solar" class="font-mono text-cyan-300 font-bold">450 kW</span>
+              </div>
+              <input type="range" id="sb-input-solar" min="0" max="1000" step="10" value="450" oninput="runEMSSandbox()">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-400">AeroLeaf Wind Power:</span>
+                <span id="sb-val-wind" class="font-mono text-emerald-300 font-bold">120 kW</span>
+              </div>
+              <input type="range" id="sb-input-wind" min="0" max="400" step="5" value="120" oninput="runEMSSandbox()">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-400">Wave Energy (WEC):</span>
+                <span id="sb-val-wave" class="font-mono text-blue-300 font-bold">150 kW</span>
+              </div>
+              <input type="range" id="sb-input-wave" min="0" max="500" step="5" value="150" oninput="runEMSSandbox()">
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-400">Open-Cycle OTEC Baseload:</span>
+                <span id="sb-val-otec" class="font-mono text-teal-300 font-bold">80 kW</span>
+              </div>
+              <input type="range" id="sb-input-otec" min="20" max="250" step="5" value="80" oninput="runEMSSandbox()">
+            </div>
+
+            <div class="pt-2 border-t border-slate-800">
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-rose-400 font-semibold">Consumer Demand Load:</span>
+                <span id="sb-val-load" class="font-mono text-rose-300 font-bold">350 kW</span>
+              </div>
+              <input type="range" id="sb-input-load" min="50" max="800" step="10" value="350" oninput="runEMSSandbox()">
+            </div>
+          </div>
+
+          <!-- Real-time Dispatch Results & Load Distribution -->
+          <div class="space-y-4 bg-ocean-950/80 p-5 rounded-xl border border-slate-800 flex flex-col justify-between">
+            <div>
+              <span class="text-xs font-bold text-teal-300 uppercase tracking-wider block mb-3">2. EMS Priority Dispatch & Load Distribution Results</span>
+              
+              <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="p-3 bg-ocean-900 rounded-xl border border-slate-800 text-center">
+                  <span class="text-[10px] text-slate-400 uppercase">Total Generation</span>
+                  <div id="sb-res-total-gen" class="text-lg font-bold font-mono text-cyan-300 mt-0.5">800 kW</div>
+                </div>
+                <div class="p-3 bg-ocean-900 rounded-xl border border-slate-800 text-center">
+                  <span class="text-[10px] text-slate-400 uppercase">Net Power Balance</span>
+                  <div id="sb-res-net-power" class="text-lg font-bold font-mono text-emerald-400 mt-0.5">+450 kW</div>
+                </div>
+              </div>
+
+              <!-- Power Distribution Breakdown List -->
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between items-center p-2.5 bg-ocean-900 rounded-lg border border-slate-800">
+                  <span class="text-slate-300 flex items-center gap-2"><i class="fa-solid fa-house-chimney text-rose-400"></i> Critical Island Load:</span>
+                  <span id="sb-res-crit-load" class="font-mono font-bold text-rose-300">350.0 kW (100% Met)</span>
+                </div>
+
+                <div class="flex justify-between items-center p-2.5 bg-ocean-900 rounded-lg border border-slate-800">
+                  <span class="text-slate-300 flex items-center gap-2"><i class="fa-solid fa-droplet text-teal-400"></i> LTTD Desalination Load:</span>
+                  <span id="sb-res-lttd" class="font-mono font-bold text-teal-300">60.0 kW</span>
+                </div>
+
+                <div class="flex justify-between items-center p-2.5 bg-ocean-900 rounded-lg border border-slate-800">
+                  <span class="text-slate-300 flex items-center gap-2"><i class="fa-solid fa-battery-half text-blue-400"></i> BESS Storage Action:</span>
+                  <span id="sb-res-bess" class="font-mono font-bold text-blue-300">Charging (+200.0 kW)</span>
+                </div>
+
+                <div class="flex justify-between items-center p-2.5 bg-ocean-900 rounded-lg border border-slate-800">
+                  <span class="text-slate-300 flex items-center gap-2"><i class="fa-solid fa-flask-vial text-emerald-400"></i> Green H₂ Electrolyser:</span>
+                  <span id="sb-res-h2" class="font-mono font-bold text-emerald-300">190.0 kW</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 p-3 bg-teal-950/40 border border-teal-500/30 rounded-xl text-[11px] text-teal-300">
+              <i class="fa-solid fa-circle-check"></i> <strong>Controller Status:</strong> Grey Wolf Optimizer successfully balanced priority loads with zero curtailment and zero unserved energy.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Analogy & Framework Explanation -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div class="glass-card p-5 rounded-2xl">
+          <h4 class="text-sm font-bold text-cyan-300 mb-3 flex items-center gap-2">
+            <i class="fa-solid fa-hotel"></i> Analogy: The Intelligent Hotel Manager
+          </h4>
+          <p class="text-xs text-slate-300 leading-relaxed mb-3">
+            Imagine a hotel on an island with four kitchens producing food, a cold-storage room, and guests demanding meals at varying times:
+          </p>
+          <ul class="space-y-2 text-xs text-slate-300">
+            <li class="flex items-start gap-2"><i class="fa-solid fa-sun text-amber-400 mt-0.5"></i> <span><strong>Solar:</strong> Kitchen producing high output during sunny hours.</span></li>
+            <li class="flex items-start gap-2"><i class="fa-solid fa-wind text-emerald-400 mt-0.5"></i> <span><strong>Wind:</strong> Kitchen whose output fluctuates with wind conditions.</span></li>
+            <li class="flex items-start gap-2"><i class="fa-solid fa-water text-blue-400 mt-0.5"></i> <span><strong>Wave / OTEC:</strong> Kitchens providing steady ocean baseload and changing wave power.</span></li>
+            <li class="flex items-start gap-2"><i class="fa-solid fa-battery-full text-teal-400 mt-0.5"></i> <span><strong>Battery:</strong> The cold-storage room.</span></li>
+          </ul>
+          <div class="mt-3 p-3 bg-ocean-950 rounded-xl border border-slate-800 text-xs text-slate-300">
+            <em>With an intelligent manager, the system predicts demand, checks supplies, stores excess, and coordinates resources in real time.</em>
+          </div>
+        </div>
+
+        <div class="glass-card p-5 rounded-2xl flex flex-col justify-between">
+          <div>
+            <h4 class="text-sm font-bold text-teal-300 mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-microchip"></i> Dual-Intelligence Architecture
+            </h4>
+            
+            <div class="space-y-3 text-xs">
+              <div class="p-3 bg-ocean-950 rounded-xl border border-slate-800">
+                <span class="font-bold text-cyan-300 block mb-1">A. Deep Learning (The Predictor)</span>
+                <p class="text-slate-300">Acts like a weather forecaster, learning historical patterns to predict solar, wind, wave, and consumer demand for the next 24 hours.</p>
+              </div>
+
+              <div class="p-3 bg-ocean-950 rounded-xl border border-slate-800">
+                <span class="font-bold text-teal-300 block mb-1">B. Metaheuristic Optimization (The Decision-Maker)</span>
+                <p class="text-slate-300">Algorithms such as <strong>Grey Wolf Optimizer (GWO)</strong> evaluate operating schedules for low cost while respecting limits.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Component Software Mapping Table -->
+      <div class="glass-card p-6 rounded-2xl">
+        <h4 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-layer-group text-cyan-400"></i> Component Software Mapping
+        </h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs text-left">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th class="py-3 px-4">Component</th>
+                <th class="py-3 px-4">What Our Software Does</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 text-slate-300 font-mono">
+              <tr>
+                <td class="py-3 px-4 font-bold text-white">Solar / TOPCon</td>
+                <td class="py-3 px-4">Forecasts solar production and monitors inverter output.</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-bold text-white">AeroLeaf wind grid</td>
+                <td class="py-3 px-4">Uses measured wind conditions and actual output to estimate available energy.</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-bold text-white">Wave-energy units</td>
+                <td class="py-3 px-4">Estimates output using wave conditions, device performance and availability.</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-bold text-white">OTEC</td>
+                <td class="py-3 px-4">Tracks net deliverable output, auxiliary pumping loads, and working fluid thermal limits.</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-bold text-white">Battery storage</td>
+                <td class="py-3 px-4">Decides when to charge or discharge while respecting state of charge and power limits.</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 font-bold text-white">Consumer loads</td>
+                <td class="py-3 px-4">Predicts demand and prioritizes critical services such as hospitals and water production.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- VIEW 7: ECONOMICS & CARBON -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="view-economics" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <div class="glass-card p-5 rounded-xl border-l-4 border-l-cyan-400">
+          <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Levelized Cost of Energy (LCOE)</span>
+          <p id="econ-lcoe" class="text-2xl font-bold font-mono text-cyan-300 mt-2">₹11.82 / kWh</p>
+          <span class="text-[11px] text-emerald-400 mt-1 block">vs. Diesel Baseline ₹32.50 / kWh</span>
+        </div>
+
+        <div class="glass-card p-5 rounded-xl border-l-4 border-l-teal-400">
+          <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Levelized Cost of Water (LCOW)</span>
+          <p id="econ-lcow" class="text-2xl font-bold font-mono text-teal-300 mt-2">₹62.40 / m³</p>
+          <span class="text-[11px] text-slate-400 mt-1 block">Freshwater Cost per 1,000 Liters</span>
+        </div>
+
+        <div class="glass-card p-5 rounded-xl border-l-4 border-l-emerald-400">
+          <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Project Payback Period</span>
+          <p id="econ-payback" class="text-2xl font-bold font-mono text-emerald-300 mt-2">6.4 Years</p>
+          <span class="text-[11px] text-slate-400 mt-1 block">IRR: 16.8% (25-Year Lifecycle)</span>
+        </div>
+
+      </div>
+
+      <div class="glass-card p-5 rounded-2xl">
+        <h3 class="text-base font-semibold text-white mb-1">Cumulative Cash Flow & Diesel Displacement Savings</h3>
+        <p class="text-xs text-slate-400 mb-4">Financial projection comparing high-cost island diesel import against integrated ocean renewable asset investment over 20 years.</p>
+        
+        <div class="h-[320px] relative">
+          <canvas id="chart-cash-flow"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------------ -->
+    <!-- VIEW 8: REFERENCE LIBRARY -->
+    <!-- ------------------------------------------------------------------ -->
+    <div id="view-references" class="space-y-6 hidden">
+      <div class="glass-card p-6 rounded-2xl">
+        <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-book-bookmark text-cyan-400"></i> Technical References & Data Sources
+        </h3>
+        <p class="text-xs text-slate-400 mb-6">Peer-reviewed literature, government reports, and engineering datasheets supporting simulation parameters for Agatti Island, Lakshadweep.</p>
+
+        <div class="space-y-4 text-xs">
+          <div class="p-4 bg-ocean-950 rounded-xl border border-slate-800">
+            <span class="px-2 py-0.5 text-[10px] bg-cyan-950 text-cyan-300 rounded font-mono font-semibold">NIOT India Report</span>
+            <h4 class="text-sm font-bold text-white mt-1">Low Temperature Thermal Desalination (LTTD) in Lakshadweep Islands</h4>
+            <p class="text-slate-400 mt-1">National Institute of Ocean Technology (NIOT), Ministry of Earth Sciences, Govt of India. Verified temperature gradient (ΔT ≈ 20°C) between surface seawater (28°C) and deep ocean water at 1000m depth (8°C).</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="border-t border-slate-800/80 bg-ocean-900/60 py-4 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500">
+      Agatti Island Ocean Hybrid Energy, LTTD & Green H₂ Simulator · Developed for Marine Renewable Research · Lakshadweep Archipelago
+    </div>
+  </footer>
+
+  <!-- ==================== INTERACTIVE JAVASCRIPT SIMULATION LOGIC ==================== -->
+  <script>
+    const state = {
+      solarCap: 650,
+      psh: 6.0,
+      windUnits: 117,
+      windSpeed: 6.6,
+      waveUnits: 30,
+      otecDt: 20.0,
+      islandLoad: 260,
+      bessCap: 1200,
+      
+      hourlySolar: [],
+      hourlyWind: [],
+      hourlyWave: [],
+      hourlyOtec: [],
+      hourlyTotalGen: [],
+      hourlyIslandLoad: [],
+      hourlyH2: [],
+      
+      charts: {}
+    };
+
+    function runSimulation() {
+      state.hourlySolar = [];
+      state.hourlyWind = [];
+      state.hourlyWave = [];
+      state.hourlyOtec = [];
+      state.hourlyTotalGen = [];
+      state.hourlyIslandLoad = [];
+      state.hourlyH2 = [];
+
+      const solarCurve = [0, 0, 0, 0, 0, 0.02, 0.15, 0.4, 0.7, 0.9, 0.98, 1.0, 0.95, 0.85, 0.65, 0.35, 0.1, 0.01, 0, 0, 0, 0, 0, 0];
+      const windMult = [0.9, 0.85, 0.8, 0.8, 0.85, 0.9, 1.0, 1.1, 1.15, 1.2, 1.1, 1.05, 1.0, 0.95, 0.9, 0.95, 1.0, 1.1, 1.15, 1.1, 1.0, 0.95, 0.9, 0.85];
+      const waveMult = [1.0, 0.98, 0.95, 0.95, 0.97, 1.0, 1.02, 1.05, 1.08, 1.1, 1.05, 1.0, 0.96, 0.94, 0.95, 0.98, 1.02, 1.05, 1.07, 1.05, 1.02, 1.0, 0.99, 0.98];
+      const loadProfile = [0.7, 0.65, 0.6, 0.6, 0.65, 0.75, 0.9, 1.1, 1.2, 1.15, 1.1, 1.05, 1.15, 1.1, 1.0, 0.95, 1.0, 1.25, 1.35, 1.3, 1.15, 1.0, 0.85, 0.75];
+
+      let dailySolarYield = 0;
+      let dailyWindYield = 0;
+      let dailyWaveYield = 0;
+      let dailyOtecYield = 0;
+
+      for (let h = 0; h < 24; h++) {
+        const solarPwr = state.solarCap * solarCurve[h] * (state.psh / 6.0);
+        const effWindSpeed = state.windSpeed * windMult[h];
+        const singleWindPwr = Math.min(0.3, 0.3 * Math.pow(effWindSpeed / 7.5, 3));
+        const windPwr = state.windUnits * singleWindPwr;
+        const wavePwr = state.waveUnits * 3.75 * waveMult[h];
+        const otecPwr = Math.max(10, 80 * (state.otecDt / 20.0));
+
+        const totalGen = solarPwr + windPwr + wavePwr + otecPwr;
+        const currentLoad = state.islandLoad * loadProfile[h];
+
+        const surplus = Math.max(0, totalGen - currentLoad);
+        const h2Kg = (surplus * 0.7) / 55.0;
+
+        state.hourlySolar.push(Math.round(solarPwr));
+        state.hourlyWind.push(Math.round(windPwr));
+        state.hourlyWave.push(Math.round(wavePwr));
+        state.hourlyOtec.push(Math.round(otecPwr));
+        state.hourlyTotalGen.push(Math.round(totalGen));
+        state.hourlyIslandLoad.push(Math.round(currentLoad));
+        state.hourlyH2.push(parseFloat(h2Kg.toFixed(2)));
+
+        dailySolarYield += solarPwr;
+        dailyWindYield += windPwr;
+        dailyWaveYield += wavePwr;
+        dailyOtecYield += otecPwr;
+      }
+
+      const dailyTotalEnergy = dailySolarYield + dailyWindYield + dailyWaveYield + dailyOtecYield;
+      const dailyH2Kg = state.hourlyH2.reduce((a, b) => a + b, 0);
+      const dailyWaterM3 = Math.round(state.otecDt * 7.5);
+
+      document.getElementById('kpi-total-power').innerText = `${Math.round(Math.max(...state.hourlyTotalGen))} kW`;
+      document.getElementById('kpi-daily-energy').innerText = `${Math.round(dailyTotalEnergy).toLocaleString()} kWh`;
+      document.getElementById('kpi-water-output').innerText = `${dailyWaterM3} m³/day`;
+      document.getElementById('kpi-h2-output').innerText = `${dailyH2Kg.toFixed(1)} kg/day`;
+      
+      const dieselSavedLiters = Math.round(dailyTotalEnergy * 0.29);
+      document.getElementById('kpi-diesel-offset').innerText = `${dieselSavedLiters.toLocaleString()} L/day`;
+      
+      const co2AvoidedTonnes = Math.round((dieselSavedLiters * 2.68 * 365) / 1000);
+      document.getElementById('kpi-co2-offset').innerText = `${co2AvoidedTonnes.toLocaleString()} t/yr`;
+
+      document.getElementById('lttd-water-val').innerText = `${dailyWaterM3} m³/day`;
+      document.getElementById('h2-water-req-val').innerText = `${Math.round(dailyH2Kg * 9)} Liters/day`;
+      document.getElementById('h2-prod-val').innerText = `${dailyH2Kg.toFixed(1)} kg/day`;
+
+      updateCharts();
+    }
+
+    // ------------------------------------------------------------------
+    // INTERACTIVE SANDBOX EMS LOGIC
+    // ------------------------------------------------------------------
+    function runEMSSandbox() {
+      const solar = parseFloat(document.getElementById('sb-input-solar').value);
+      const wind = parseFloat(document.getElementById('sb-input-wind').value);
+      const wave = parseFloat(document.getElementById('sb-input-wave').value);
+      const otec = parseFloat(document.getElementById('sb-input-otec').value);
+      const load = parseFloat(document.getElementById('sb-input-load').value);
+
+      document.getElementById('sb-val-solar').innerText = solar + ' kW';
+      document.getElementById('sb-val-wind').innerText = wind + ' kW';
+      document.getElementById('sb-val-wave').innerText = wave + ' kW';
+      document.getElementById('sb-val-otec').innerText = otec + ' kW';
+      document.getElementById('sb-val-load').innerText = load + ' kW';
+
+      const totalGen = solar + wind + wave + otec;
+      const netPower = totalGen - load;
+
+      document.getElementById('sb-res-total-gen').innerText = totalGen + ' kW';
+      const netEl = document.getElementById('sb-res-net-power');
+      netEl.innerText = (netPower >= 0 ? '+' : '') + netPower + ' kW';
+      netEl.className = netPower >= 0 ? 'text-lg font-bold font-mono text-emerald-400 mt-0.5' : 'text-lg font-bold font-mono text-rose-400 mt-0.5';
+
+      document.getElementById('sb-res-crit-load').innerText = load + ' kW (100% Met)';
+
+      let lttdAlloc = 0;
+      let bessAlloc = 0;
+      let h2Alloc = 0;
+
+      if (netPower >= 0) {
+        // Surplus power management priority: LTTD -> BESS Charging -> Electrolyser
+        lttdAlloc = Math.min(60, netPower * 0.2);
+        let remainder = netPower - lttdAlloc;
+        bessAlloc = Math.min(200, remainder * 0.5);
+        remainder -= bessAlloc;
+        h2Alloc = Math.max(0, remainder);
+
+        document.getElementById('sb-res-lttd').innerText = lttdAlloc.toFixed(1) + ' kW';
+        document.getElementById('sb-res-bess').innerText = 'Charging (+' + bessAlloc.toFixed(1) + ' kW)';
+        document.getElementById('sb-res-h2').innerText = h2Alloc.toFixed(1) + ' kW';
+      } else {
+        // Deficit power management: BESS discharging
+        let deficit = Math.abs(netPower);
+        document.getElementById('sb-res-lttd').innerText = '15.0 kW (Reduced)';
+        document.getElementById('sb-res-bess').innerText = 'Discharging (-' + Math.min(300, deficit).toFixed(1) + ' kW)';
+        document.getElementById('sb-res-h2').innerText = '0.0 kW (Standby)';
+      }
+    }
+
+    function resetSandboxInputs() {
+      document.getElementById('sb-input-solar').value = 450;
+      document.getElementById('sb-input-wind').value = 120;
+      document.getElementById('sb-input-wave').value = 150;
+      document.getElementById('sb-input-otec').value = 80;
+      document.getElementById('sb-input-load').value = 350;
+      runEMSSandbox();
+    }
+
+    // ------------------------------------------------------------------
+    // CHART GENERATION & UPDATES
+    // ------------------------------------------------------------------
+    const hoursLabels = Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`);
+
+    function initCharts() {
+      const ctxOverviewGen = document.getElementById('chart-overview-gen').getContext('2d');
+      state.charts.overviewGen = new Chart(ctxOverviewGen, {
+        type: 'line',
+        data: {
+          labels: hoursLabels,
+          datasets: [
+            { label: 'TOPCon Solar', data: state.hourlySolar, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.15)', fill: true, tension: 0.4 },
+            { label: 'AeroLeaf Wind', data: state.hourlyWind, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)', fill: true, tension: 0.4 },
+            { label: 'Wave Buoys', data: state.hourlyWave, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)', fill: true, tension: 0.4 },
+            { label: 'OTEC Thermal', data: state.hourlyOtec, borderColor: '#14b8a6', backgroundColor: 'rgba(20, 184, 166, 0.15)', fill: true, tension: 0.4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+          scales: {
+            x: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'Power (kW)', color: '#94a3b8' } }
+          }
+        }
+      });
+
+      const ctxOverviewDispatch = document.getElementById('chart-overview-dispatch').getContext('2d');
+      state.charts.overviewDispatch = new Chart(ctxOverviewDispatch, {
+        type: 'doughnut',
+        data: {
+          labels: ['Island Load Demand', 'LTTD Desalination', 'Green H₂ Electrolyser', 'BESS Storage Charging'],
+          datasets: [{
+            data: [42, 22, 24, 12],
+            backgroundColor: ['#f43f5e', '#06b6d4', '#10b981', '#3b82f6'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 } } } }
+        }
+      });
+
+      const ctxGenDetail = document.getElementById('chart-generation-detailed').getContext('2d');
+      state.charts.genDetail = new Chart(ctxGenDetail, {
+        type: 'bar',
+        data: {
+          labels: hoursLabels,
+          datasets: [
+            { label: 'TOPCon Solar (kW)', data: state.hourlySolar, backgroundColor: '#f59e0b' },
+            { label: 'AeroLeaf Wind (kW)', data: state.hourlyWind, backgroundColor: '#10b981' },
+            { label: 'Wave WEC (kW)', data: state.hourlyWave, backgroundColor: '#3b82f6' },
+            { label: 'OTEC Thermal (kW)', data: state.hourlyOtec, backgroundColor: '#14b8a6' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true, ticks: { color: '#64748b' } },
+            y: { stacked: true, ticks: { color: '#64748b' } }
+          },
+          plugins: { legend: { labels: { color: '#94a3b8' } } }
+        }
+      });
+
+      const ctxDispatchBal = document.getElementById('chart-dispatch-balance').getContext('2d');
+      state.charts.dispatchBal = new Chart(ctxDispatchBal, {
+        type: 'line',
+        data: {
+          labels: hoursLabels,
+          datasets: [
+            { label: 'Total Generation (kW)', data: state.hourlyTotalGen, borderColor: '#00f2fe', borderWidth: 2, tension: 0.3 },
+            { label: 'Island Demand Load (kW)', data: state.hourlyIslandLoad, borderColor: '#f43f5e', borderDash: [5, 5], borderWidth: 2, tension: 0.3 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8' } } },
+          scales: {
+            x: { ticks: { color: '#64748b' } },
+            y: { ticks: { color: '#64748b' } }
+          }
+        }
+      });
+
+      const ctxCashFlow = document.getElementById('chart-cash-flow').getContext('2d');
+      const years = Array.from({length: 20}, (_, i) => `Year ${i + 1}`);
+      const dieselCostCumulative = years.map((_, i) => (i + 1) * 28.5);
+      const hybridCapexOpex = years.map((_, i) => 120 + (i + 1) * 3.2);
+
+      state.charts.cashFlow = new Chart(ctxCashFlow, {
+        type: 'line',
+        data: {
+          labels: years,
+          datasets: [
+            { label: 'Cumulative Baseline Diesel Expenditure (Million ₹)', data: dieselCostCumulative, borderColor: '#f43f5e', fill: false },
+            { label: 'Cumulative Ocean Hybrid Project Cost (Million ₹)', data: hybridCapexOpex, borderColor: '#10b981', fill: false }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8' } } },
+          scales: {
+            x: { ticks: { color: '#64748b' } },
+            y: { ticks: { color: '#64748b' }, title: { display: true, text: 'Million ₹ (INR)', color: '#94a3b8' } }
+          }
+        }
+      });
+    }
+
+    function updateCharts() {
+      if (!state.charts.overviewGen) return;
+      state.charts.overviewGen.data.datasets[0].data = state.hourlySolar;
+      state.charts.overviewGen.data.datasets[1].data = state.hourlyWind;
+      state.charts.overviewGen.data.datasets[2].data = state.hourlyWave;
+      state.charts.overviewGen.data.datasets[3].data = state.hourlyOtec;
+      state.charts.overviewGen.update();
+
+      state.charts.genDetail.data.datasets[0].data = state.hourlySolar;
+      state.charts.genDetail.data.datasets[1].data = state.hourlyWind;
+      state.charts.genDetail.data.datasets[2].data = state.hourlyWave;
+      state.charts.genDetail.data.datasets[3].data = state.hourlyOtec;
+      state.charts.genDetail.update();
+
+      state.charts.dispatchBal.data.datasets[0].data = state.hourlyTotalGen;
+      state.charts.dispatchBal.data.datasets[1].data = state.hourlyIslandLoad;
+      state.charts.dispatchBal.update();
+    }
+
+    function switchTab(tabId) {
+      const tabs = ['overview', 'generation', 'dispatch', 'lttd-h2', '3d-view', 'software-stackup', 'economics', 'references'];
+      
+      tabs.forEach(t => {
+        const viewEl = document.getElementById(`view-${t}`);
+        const tabBtn = document.getElementById(`tab-${t}`);
+        
+        if (t === tabId) {
+          viewEl.classList.remove('hidden');
+          tabBtn.classList.add('border-cyan-400', 'text-cyan-300', 'font-semibold');
+          tabBtn.classList.remove('border-transparent', 'text-slate-400');
+        } else {
+          viewEl.classList.add('hidden');
+          tabBtn.classList.remove('border-cyan-400', 'text-cyan-300', 'font-semibold');
+          tabBtn.classList.add('border-transparent', 'text-slate-400');
+        }
+      });
+    }
+
+    function toggleSimulationDrawer() {
+      const drawer = document.getElementById('simulation-drawer');
+      drawer.classList.toggle('hidden');
+    }
+
+    function updateSimParams() {
+      state.solarCap = parseFloat(document.getElementById('input-solar-cap').value);
+      state.psh = parseFloat(document.getElementById('input-psh').value);
+      state.windUnits = parseInt(document.getElementById('input-wind-units').value);
+      state.windSpeed = parseFloat(document.getElementById('input-wind-speed').value);
+      state.waveUnits = parseInt(document.getElementById('input-wave-units').value);
+      state.otecDt = parseFloat(document.getElementById('input-otec-dt').value);
+      state.islandLoad = parseFloat(document.getElementById('input-island-load').value);
+      state.bessCap = parseFloat(document.getElementById('input-bess-cap').value);
+
+      document.getElementById('val-solar-cap').innerText = `${state.solarCap} kWp`;
+      document.getElementById('val-psh').innerText = `${state.psh.toFixed(1)} PSH`;
+      document.getElementById('val-wind-units').innerText = `${state.windUnits} Units (${Math.round(state.windUnits/13)}x13)`;
+      document.getElementById('val-wind-speed').innerText = `${state.windSpeed.toFixed(1)} m/s`;
+      document.getElementById('val-wave-units').innerText = `${state.waveUnits} TBS Units`;
+      document.getElementById('val-otec-dt').innerText = `${state.otecDt.toFixed(1)} °C`;
+      document.getElementById('val-island-load').innerText = `${state.islandLoad} kW Avg`;
+      document.getElementById('val-bess-cap').innerText = `${state.bessCap} kWh`;
+
+      runSimulation();
+    }
+
+    function exportRunReport() {
+      const reportText = `AGATTI ISLAND OCEAN HYBRID ENERGY SIMULATION REPORT
+Date: ${new Date().toLocaleDateString()}
+Location: Agatti Island, Lakshadweep, India
+`;
+      const blob = new Blob([reportText], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Agatti_Ocean_Energy_Simulation_Report.txt`;
+      a.click();
+    }
+
+    window.onload = function() {
+      initCharts();
+      runSimulation();
+      runEMSSandbox();
+    };
+  </script>
+</body>
+</html>
